@@ -273,7 +273,7 @@ namespace NeoAxis
 					//!!!! deprecated. use CultureInfo.CurrentCulture https://github.com/dotnet/platform-compat/blob/master/docs/DE0008.md
 					Thread.CurrentThread.CurrentCulture = new CultureInfo( "en-US" );
 				}
-				catch { }
+				catch( Exception e ) { Console.WriteLine( "CULTURE SET FAILED: " + e.Message ); }
 
 				AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
 				//bool monoRuntime = Type.GetType( "Mono.Runtime", false ) != null;
