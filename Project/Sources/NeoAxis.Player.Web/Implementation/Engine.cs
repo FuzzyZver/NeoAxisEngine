@@ -55,6 +55,7 @@ namespace NeoAxis.Player.Web
 			public EMouseButtons Button;
 			public ActionEnum Action;
 			public Vector2F Vector;
+			public bool Relative;
 		}
 
 		/////////////////////////////////////////
@@ -108,9 +109,7 @@ namespace NeoAxis.Player.Web
 			EngineApp.InitSettings.CreateWindowedMode = WindowedModeEnum.Windowed;
 			SimulationApp.WindowedMode = EngineApp.InitSettings.CreateWindowedMode.Value;
 
-			//these parameters are enabled by default
-			//EngineApp.EnginePauseWhenApplicationIsNotActive = false;
-			//EngineApp.InitSettings.AllowJoysticksAndSpecialInputDevices = false;
+			EngineApp.InitSettings.UseDirectInputForMouseRelativeMode = false;
 
 			//specify Project assembly for scripts
 			AssemblyUtility.RegisterAssembly( typeof( Engine ).Assembly, "" );
@@ -277,19 +276,19 @@ namespace NeoAxis.Player.Web
 
 				//sort by priority and distance to the control
 				CollectionUtility.SelectionSort( filtered, delegate ( TouchData.TouchDownRequestToProcessTouch item1, TouchData.TouchDownRequestToProcessTouch item2 )
-					{
-						if( item1.ProcessPriority > item2.ProcessPriority )
-							return -1;
-						else if( item1.ProcessPriority < item2.ProcessPriority )
-							return 1;
+				{
+					if( item1.ProcessPriority > item2.ProcessPriority )
+						return -1;
+					else if( item1.ProcessPriority < item2.ProcessPriority )
+						return 1;
 
-						if( item1.DistanceInPixels < item2.DistanceInPixels )
-							return -1;
-						else if( item1.DistanceInPixels > item2.DistanceInPixels )
-							return 1;
+					if( item1.DistanceInPixels < item2.DistanceInPixels )
+						return -1;
+					else if( item1.DistanceInPixels > item2.DistanceInPixels )
+						return 1;
 
-						return 0;
-					} );
+					return 0;
+				} );
 
 				if( filtered.Count != 0 )
 				{
@@ -360,7 +359,12 @@ namespace NeoAxis.Player.Web
 				viewport.PerformMouseDoubleClick( item.Button, ref handled );
 				break;
 			case ActionEnum.Move:
-				viewport.PerformMouseMove( item.Vector.ToVector2() / viewport.SizeInPixels.ToVector2() );
+				if( item.Relative )
+					PlatformFunctionalityWeb.mouseRelativeModeDelta += item.Vector;
+				else
+					PlatformFunctionalityWeb.cursorPosition = item.Vector;
+
+				EngineApp.CreatedInsideEngineWindow?.ProcessMouseMoveEvent();
 				break;
 			case ActionEnum.Wheel:
 				viewport.PerformMouseWheel( (int)item.Vector.Y, ref handled );

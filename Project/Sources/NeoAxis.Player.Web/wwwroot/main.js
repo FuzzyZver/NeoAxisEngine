@@ -21,7 +21,7 @@ const splash = (() => {
 			hidden = true;
 			el.style.opacity = "0";
 			el.addEventListener("transitionend", () => el.remove(), { once: true });
-			setTimeout(() => el.remove(), 1500); 
+			setTimeout(() => el.remove(), 1500);
 		}
 	};
 })();
@@ -45,9 +45,10 @@ const interop = exports.NeoAxis.Player.Web.Interop;
 const canvas = globalThis.document.getElementById("canvas");
 dotnet.instance.Module["canvas"] = canvas;
 
+let mouseRelativeModeHandler = (enable) => { };
+
 setModuleImports("main.js", {
-	initialize: () =>
-	{
+	initialize: () => {
 		const InputModifiers =
 		{
 			Shift: 1,
@@ -167,8 +168,7 @@ setModuleImports("main.js", {
 			};
 		}
 
-		function getEventModifiers(/** @type {KeyboardEvent|MouseEvent|TouchEvent} */e)
-		{
+		function getEventModifiers(/** @type {KeyboardEvent|MouseEvent|TouchEvent} */e) {
 			var flags = 0;
 			if (e.shiftKey) flags |= InputModifiers.Shift;
 			if (e.ctrlKey) flags |= InputModifiers.Ctrl;
@@ -177,8 +177,7 @@ setModuleImports("main.js", {
 			return flags;
 		}
 
-		const keyDown = (e) =>
-		{
+		const keyDown = (e) => {
 			var keyLocked = false;
 			if (e.key == "Insert")
 				keyLocked = e.getModifierState('Insert');
@@ -195,8 +194,7 @@ setModuleImports("main.js", {
 			return false;
 		}
 
-		const keyUp = (e) =>
-		{
+		const keyUp = (e) => {
 			var keyLocked = false;
 			if (e.key == "Insert")
 				keyLocked = e.getModifierState('Insert');
@@ -213,32 +211,113 @@ setModuleImports("main.js", {
 			return false;
 		}
 
+		let relativeModeRequested = false;
+
+		const POINTER_LOCK_COOLDOWN = 1500;
+		let pointerLockExitTime = 0;
+		let exitRequestedByPage = false;
+
+		let unadjustedMovementSupported = true;
+
+		const isPointerLocked = () => document.pointerLockElement === canvas;
+
+		const requestPointerLock = () => {
+			if (isPointerLocked())
+				return;
+
+			if (Date.now() - pointerLockExitTime < POINTER_LOCK_COOLDOWN)
+				return;
+
+			let promise;
+			try {
+				promise = unadjustedMovementSupported
+					? canvas.requestPointerLock({ unadjustedMovement: true })
+					: canvas.requestPointerLock();
+			}
+			catch (err) {
+				console.warn(`Pointer lock is not available: ${err.message}`);
+				return;
+			}
+
+			if (!promise || typeof promise.catch !== "function")
+				return;
+
+			promise.catch((err) => {
+				if (err.name === "NotSupportedError" && unadjustedMovementSupported) {
+					unadjustedMovementSupported = false;
+
+					const retry = canvas.requestPointerLock();
+					if (retry && typeof retry.catch === "function")
+						retry.catch((retryError) => console.warn(`Pointer lock request failed: ${retryError.message}`));
+					return;
+				}
+
+				console.warn(`Pointer lock request failed: ${err.message}`);
+			});
+		}
+
+		const setMouseRelativeMode = (enable) => {
+			relativeModeRequested = enable;
+
+			if (enable)
+				requestPointerLock();
+			else if (isPointerLocked()) {
+				exitRequestedByPage = true;
+				document.exitPointerLock();
+			}
+		}
+
+		mouseRelativeModeHandler = setMouseRelativeMode;
+
+		//esc always leaves pointer lock and the page can not prevent it, so the engine has to be
+		//told. relativeModeRequested is deliberately not cleared here: the engine still wants the
+		//mode, so the next click inside the canvas grabs the mouse back.
+		document.addEventListener("pointerlockchange", () => {
+			const locked = isPointerLocked();
+
+			if (!locked) {
+				if (!exitRequestedByPage)
+					pointerLockExitTime = Date.now();
+				exitRequestedByPage = false;
+			}
+
+			interop.OnMouseRelativeModeChanged(locked);
+		});
+
+		if (window.self !== window.top)
+			console.warn("The player runs inside an iframe. Pointer lock needs allow=\"pointer-lock\" on the iframe tag.");
+		const toCanvasPixels = (value) => value * (window.devicePixelRatio || 1.0);
+
+		//CHANGED end
+
 		const mouseMove = (e) => {
-			//CHANGED: was offsetX/offsetY * devicePixelRatio
+			if (isPointerLocked()) {
+				interop.OnMouseMoveRelative(toCanvasPixels(e.movementX), toCanvasPixels(e.movementY));
+				return;
+			}
 			const position = getCanvasPosition(e.clientX, e.clientY);
 			interop.OnMouseMove(position.x, position.y);
 		}
 
-		const mouseDown = (e) =>
-		{
+		const mouseDown = (e) => {
+			if (relativeModeRequested && !isPointerLocked())
+				requestPointerLock();
+
 			interop.OnMouseDown(e.button, getEventModifiers(e));
 		}
 
-		const mouseUp = (e) =>
-		{
+		const mouseUp = (e) => {
 			interop.OnMouseUp(e.button, getEventModifiers(e));
 		}
 
-		const mouseDoubleClick = (e) =>
-		{
+		const mouseDoubleClick = (e) => {
 			interop.OnMouseDoubleClick(e.button, getEventModifiers(e));
 			e.stopPropagation();
 			e.preventDefault();
 			return false;
 		}
 
-		const mouseWheel = (e) =>
-		{
+		const mouseWheel = (e) => {
 			let pixelsY = e.deltaY;
 			if (e.deltaMode === 1) // strings
 				pixelsY = e.deltaY * 33.33;
@@ -257,7 +336,6 @@ setModuleImports("main.js", {
 		}
 
 		const shouldIgnore = (e) => {
-			//CHANGED: preventDefault removed, it does nothing in a passive listener. gestures are disabled by touch-action: none in the css
 			return e.touches.length > 1 || e.type == "touchend" && e.touches.length > 0;
 		}
 
@@ -273,16 +351,14 @@ setModuleImports("main.js", {
 			}
 		}
 
-		const touchMove = (e) =>
-		{
+		const touchMove = (e) => {
 			if (shouldIgnore(e))
 				return;
 
 			var bcr = e.target.getBoundingClientRect();
 			var devicePixelRatio = window.devicePixelRatio || 1.0;
 			var touches = e.changedTouches;
-			for (var i in touches.length)
-			{
+			for (var i in touches.length) {
 				var touch = e.changedTouches[i];
 				var x = (touch.clientX - bcr.x) * devicePixelRatio;
 				var y = (touch.clientY - bcr.y) * devicePixelRatio;
@@ -290,16 +366,14 @@ setModuleImports("main.js", {
 			}
 		}
 
-		const touchEnd = (e) =>
-		{
+		const touchEnd = (e) => {
 			if (shouldIgnore(e))
 				return;
 
 			var bcr = e.target.getBoundingClientRect();
 			var devicePixelRatio = window.devicePixelRatio || 1.0;
 			var touches = e.changedTouches;
-			for (var i in touches.length)
-			{
+			for (var i in touches.length) {
 				var touch = e.changedTouches[i];
 				var x = (touch.clientX - bcr.x) * devicePixelRatio;
 				var y = (touch.clientY - bcr.y) * devicePixelRatio;
@@ -327,24 +401,19 @@ setModuleImports("main.js", {
 
 	},
 	hideLogo: () => splash.hide(),
-	setClipboardText: (text) =>
-	{
-		if (globalThis.document.hasFocus())
-		{
-			try
-			{
+	setMouseRelativeMode: (enable) => mouseRelativeModeHandler(enable),
+	setClipboardText: (text) => {
+		if (globalThis.document.hasFocus()) {
+			try {
 				if (navigator.clipboard?.writeText)
 					navigator.clipboard.writeText(text);
 			}
 			catch { }
 		}
 	},
-	getClipboardTextAsync: async () =>
-	{
-		if (globalThis.document.hasFocus())
-		{
-			try
-			{
+	getClipboardTextAsync: async () => {
+		if (globalThis.document.hasFocus()) {
+			try {
 				if (navigator.clipboard?.readText)
 					return await navigator.clipboard.readText();
 			}
@@ -352,14 +421,10 @@ setModuleImports("main.js", {
 		}
 		return "";
 	},
-	setFullscreenAsync: async (enable) =>
-	{
-		try
-		{
-			if (globalThis.document.hasFocus())
-			{
-				if (enable)
-				{
+	setFullscreenAsync: async (enable) => {
+		try {
+			if (globalThis.document.hasFocus()) {
+				if (enable) {
 					if (!document.fullscreenElement)
 						await document.documentElement.requestFullscreen();
 				}
@@ -367,8 +432,7 @@ setModuleImports("main.js", {
 					await document.exitFullscreen();
 			}
 		}
-		catch (err)
-		{
+		catch (err) {
 			console.error(`Fullscreen error: ${err.message}`);
 		}
 	},

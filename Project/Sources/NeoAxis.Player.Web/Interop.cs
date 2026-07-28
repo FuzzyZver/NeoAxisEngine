@@ -47,6 +47,23 @@ namespace NeoAxis.Player.Web
 		}
 
 		[JSExport]
+		public static void OnMouseMoveRelative( float deltaX, float deltaY )
+		{
+			Engine.inputEventQueue.Enqueue( new Engine.MouseEventItem()
+			{
+				Action = Engine.ActionEnum.Move,
+				Relative = true,
+				Vector = new Vector2F( deltaX, deltaY )
+			} );
+		}
+		[JSExport]
+		public static void OnMouseRelativeModeChanged( bool enabled )
+		{
+			PlatformFunctionalityWeb.mouseRelativeModeActive = enabled;
+			PlatformFunctionalityWeb.mouseRelativeModeDelta = Vector2F.Zero;
+		}
+
+		[JSExport]
 		public static void OnMouseWheel( float deltaX, float deltaY )
 		{
 			Engine.inputEventQueue.Enqueue( new Engine.MouseEventItem()
@@ -55,6 +72,18 @@ namespace NeoAxis.Player.Web
 				Vector = new Vector2F( deltaX, deltaY )
 			} );
 		}
+		static EMouseButtons ConvertMouseButton( int browserButton )
+		{
+			switch( browserButton )
+			{
+			case 0: return EMouseButtons.Left;
+			case 1: return EMouseButtons.Middle;
+			case 2: return EMouseButtons.Right;
+			case 3: return EMouseButtons.XButton1;
+			case 4: return EMouseButtons.XButton2;
+			default: return EMouseButtons.Left;
+			}
+		}
 
 		[JSExport]
 		public static void OnMouseDown( int button, int modifiers )
@@ -62,7 +91,7 @@ namespace NeoAxis.Player.Web
 			Engine.inputEventQueue.Enqueue( new Engine.MouseEventItem()
 			{
 				Action = Engine.ActionEnum.Down,
-				Button = (EMouseButtons)button
+				Button = ConvertMouseButton( button )
 			} );
 		}
 
@@ -72,7 +101,7 @@ namespace NeoAxis.Player.Web
 			Engine.inputEventQueue.Enqueue( new Engine.MouseEventItem()
 			{
 				Action = Engine.ActionEnum.Up,
-				Button = (EMouseButtons)button
+				Button = ConvertMouseButton( button )
 			} );
 		}
 
@@ -82,7 +111,7 @@ namespace NeoAxis.Player.Web
 			Engine.inputEventQueue.Enqueue( new Engine.MouseEventItem()
 			{
 				Action = Engine.ActionEnum.DoubleClick,
-				Button = (EMouseButtons)button
+				Button = ConvertMouseButton( button )
 			} );
 		}
 
@@ -144,6 +173,9 @@ namespace NeoAxis.Player.Web
 
 		[JSImport( "setFullscreenAsync", "main.js" )]
 		public static partial Task SetFullscreenAsync( bool enable );
+
+		[JSImport( "setMouseRelativeMode", "main.js" )]
+		public static partial void SetMouseRelativeMode( bool enable );
 
 		[JSImport( "hideLogo", "main.js" )]
 		internal static partial void HideLogo();
