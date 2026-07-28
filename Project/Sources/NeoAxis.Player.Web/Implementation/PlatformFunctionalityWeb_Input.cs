@@ -15,7 +15,7 @@ namespace NeoAxis
 		{
 			var size = GetScreenSize();
 			if( size.X <= 0 || size.Y <= 0 )
-			return Vector2.Zero;
+				return Vector2.Zero;
 			return cursorPosition.ToVector2() / size.ToVector2();
 		}
 
