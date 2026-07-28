@@ -13,10 +13,14 @@ namespace NeoAxis.Player.Web
 	public static class Program
 	{
 		public static Uri BaseAddress { get; internal set; }
-		internal static bool surfaceResized = false;
+		internal static bool surfaceResized = false; 
+		static int framesRendered;
 
 		public static async Task Main( string[] args )
 		{
+			System.Globalization.CultureInfo.DefaultThreadCurrentCulture = new System.Globalization.CultureInfo( "en-US" );
+			System.Globalization.CultureInfo.DefaultThreadCurrentUICulture = new System.Globalization.CultureInfo( "en-US" );
+
 			if( Debugger.IsAttached )
 			{
 				await Main2();
@@ -42,7 +46,14 @@ namespace NeoAxis.Player.Web
 				surfaceResized = false;
 				RenderingSystem.ApplicationRenderTarget?.WindowMovedOrResized( PlatformFunctionalityWeb.screenSize );
 			}
+			EngineApp.CreatedWindowApplicationIdle( false );
 
+			if( framesRendered < 5 )
+			{
+				framesRendered++;
+				if( framesRendered == 5 )
+					Interop.HideLogo();
+			}
 			// //process input
 			Engine.ProcessInputEvents();
 
