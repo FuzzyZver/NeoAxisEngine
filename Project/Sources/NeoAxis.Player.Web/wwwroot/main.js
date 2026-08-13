@@ -67,19 +67,7 @@ setModuleImports("main.js", {
 			Meta: 8
 		};
 
-		//set system settings
-		let mobileDevice = false;
-		if (navigator.userAgentData)
-			mobileDevice = navigator.userAgentData.mobile;
-		if (!mobileDevice)
-		{
-			const ua = navigator.userAgent;
-			const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
-			const isAndroidTabletDesktopMode = /Linux/i.test(navigator.platform) && navigator.maxTouchPoints > 1;
-			const isIPadDesktopMode = navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
-			mobileDevice = isMobileUA || isAndroidTabletDesktopMode || isIPadDesktopMode;
-		}
-		interop.SetSystemSettings(mobileDevice);
+
 
 		let currentWidth = 0;
 		let currentHeight = 0;
@@ -397,7 +385,7 @@ setModuleImports("main.js", {
 
 			const touches = e.changedTouches;
 			for (let i = 0; i < touches.length; i++)
-		{
+			{
 				if (touches[i].identifier === activeTouchId)
 					return touches[i];
 			}
@@ -419,9 +407,9 @@ setModuleImports("main.js", {
 			canvas.focus();
 			invalidateCanvasRect();
 
-				const position = getCanvasPosition(touch.clientX, touch.clientY);
-				interop.OnTouchStart(touch.identifier, position.x, position.y, getEventModifiers(e));
-			}
+			const position = getCanvasPosition(touch.clientX, touch.clientY);
+			interop.OnTouchStart(touch.identifier, position.x, position.y, getEventModifiers(e));
+		}
 
 		const touchMove = (e) =>
 		{
