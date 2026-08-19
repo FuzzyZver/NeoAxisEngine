@@ -157,6 +157,79 @@ namespace NeoAxis
 		//}
 
 		///////////////////////////////////////////////
+		[StructLayout( LayoutKind.Sequential, Pack = 1 )]
+		public struct SixDOFConstraintSettingsNative
+		{
+			public int/*bool*/ transformInWorldSpace;
+
+			public Vector3 positionA;
+			public Vector3F axisXA;
+			public Vector3F axisYA;
+			public Vector3 positionB;
+			public Vector3F axisXB;
+			public Vector3F axisYB;
+
+			public PhysicsAxisMode linearAxisX;
+			public RangeF linearLimitX;
+			public PhysicsAxisMode linearAxisY;
+			public RangeF linearLimitY;
+			public PhysicsAxisMode linearAxisZ;
+			public RangeF linearLimitZ;
+
+			public PhysicsAxisMode angularAxisX;
+			public RangeF angularLimitX;
+			public PhysicsAxisMode angularAxisY;
+			public RangeF angularLimitY;
+			public PhysicsAxisMode angularAxisZ;
+			public RangeF angularLimitZ;
+
+			public float linearXFriction;
+			public float linearYFriction;
+			public float linearZFriction;
+			public float angularXFriction;
+			public float angularYFriction;
+			public float angularZFriction;
+		}
+
+		[StructLayout( LayoutKind.Sequential, Pack = 1 )]
+		public unsafe struct VehicleConstraintSettingsNative
+		{
+			public int wheelCount;
+			public Scene.PhysicsWorldClass.VehicleWheelSettings* wheelsSettings;
+			public float frontWheelAntiRollBarStiffness;
+			public float rearWheelAntiRollBarStiffness;
+			public float maxPitchRollAngle;
+			public float engineMaxTorque;
+			public float engineMinRPM;
+			public float engineMaxRPM;
+			public int/*bool*/ transmissionAuto;
+			public int transmissionGearRatiosCount;
+			public double* transmissionGearRatios;
+			public int transmissionReverseGearRatiosCount;
+			public double* transmissionReverseGearRatios;
+			public float transmissionSwitchTime;
+			public float transmissionClutchReleaseTime;
+			public float transmissionSwitchLatency;
+			public float transmissionShiftUpRPM;
+			public float transmissionShiftDownRPM;
+			public float transmissionClutchStrength;
+			public float maxSlopeAngleInRadians;
+			public int/*bool*/ tracks;
+			public int antiRollbarsCount;
+			public float* antiRollbars;
+			public float differentialLimitedSlipRatio;
+			public int engineNormalizedTorqueCount;
+			public float* engineNormalizedTorque;
+			public float engineInertia;
+			public float engineAngularDamping;
+			public int differentialsCount;
+			public float* differentials;
+			public int trackDrivenWheel;
+			public float trackInertia;
+			public float trackAngularDamping;
+			public float trackMaxBrakeTorque;
+			public float trackDifferentialRatio;
+		}
 
 		[StructLayout( LayoutKind.Sequential, Pack = 1 )]
 		public struct SixDOFConstraintSettingsNative

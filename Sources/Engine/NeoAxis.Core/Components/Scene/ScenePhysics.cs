@@ -1506,6 +1506,7 @@ namespace NeoAxis
 				settings.angularYFriction = angularYFriction;
 				settings.angularZFriction = angularZFriction;
 
+				Log.Info( "sizeof SixDOFConstraintSettingsNative = " + System.Runtime.InteropServices.Marshal.SizeOf<PhysicsNative.SixDOFConstraintSettingsNative>() );
 				item.constraint = PhysicsNative.JCreateConstraintSixDOF( physicsSystem, bodyA.body, bodyB.body, ref settings );
 
 				//!!!!может такое быть? везде так
@@ -1649,6 +1650,7 @@ namespace NeoAxis
 				settings.trackMaxBrakeTorque = trackMaxBrakeTorque;
 				settings.trackDifferentialRatio = trackDifferentialRatio;
 
+				Log.Info( "sizeof VehicleConstraintSettingsNative = " + sizeof( PhysicsNative.VehicleConstraintSettingsNative ) );
 				constraint.constraint = PhysicsNative.JCreateConstraintVehicle( physicsSystem, body.body, ref settings );
 
 				if( constraint.body != null )
