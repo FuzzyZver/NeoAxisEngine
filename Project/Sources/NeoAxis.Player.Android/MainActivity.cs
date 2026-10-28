@@ -19,13 +19,13 @@ using AppResource = NeoAxis.Player.Android.Resource;
 
 namespace NeoAxis.Player.Android
 {
-	[Activity( 
+	[Activity(
 		Label = "@string/app_name",
 		Theme = "@android:style/Theme.DeviceDefault.NoActionBar", //Theme = "@style/AppTheme.NoActionBar", 
-		MainLauncher = true, 
-		ScreenOrientation = DefaultScreenOrientation, 
-		ConfigurationChanges = ConfigChanges.Orientation | ConfigChanges.ScreenSize, 
-		WindowSoftInputMode = SoftInput.AdjustResize 
+		MainLauncher = true,
+		ScreenOrientation = DefaultScreenOrientation,
+		ConfigurationChanges = ConfigChanges.Orientation | ConfigChanges.ScreenSize,
+		WindowSoftInputMode = SoftInput.AdjustResize
 	)]
 	public class MainActivity : Activity, View.IOnTouchListener // AppCompatActivity, View.IOnTouchListener
 	{
@@ -86,7 +86,7 @@ namespace NeoAxis.Player.Android
 
 			surfaceView.SetOnTouchListener( this );
 #else
-			surfaceView = new GLSurfaceView( this );
+			surfaceView = new MyGLSurfaceView( this );
 			surfaceView.SetEGLContextClientVersion( 3 );
 
 			//it's just recommendation, is not works for any device
@@ -325,9 +325,7 @@ namespace NeoAxis.Player.Android
 		public override bool OnKeyUp( [GeneratedEnum] Keycode keyCode, global::Android.Views.KeyEvent e )
 		{
 			if( Engine.engineInitialized )
-			{
 				return true;
-			}
 
 			return base.OnKeyUp( keyCode, e );
 		}
