@@ -104,6 +104,9 @@ namespace NeoAxis.Player.Android
 			sceneHolder.AddView( surfaceView );
 
 			surfaceView.SetOnTouchListener( this );
+
+			surfaceView.Focusable = true;
+			surfaceView.FocusableInTouchMode = true;
 #endif
 
 			//engineMainThread = new Thread( EngineMainThreadMethod );
@@ -196,21 +199,28 @@ namespace NeoAxis.Player.Android
 				if( requiredSoftInput != currentSoftInput )
 				{
 					currentSoftInput = requiredSoftInput;
+					var show = currentSoftInput;
 
-					var view = SurfaceView;
-
-					var inputMethodManager = (InputMethodManager)GetSystemService( Context.InputMethodService );
-
-					if( currentSoftInput )
+					RunOnUiThread( delegate ()
 					{
-						view.RequestFocus();
-						// Explicitly show (avoids obsolete ToggleSoftInput on API 31+).
-						inputMethodManager.ShowSoftInput( view, ShowFlags.Forced );
-					}
-					else
-					{
-						inputMethodManager.HideSoftInputFromWindow( view.WindowToken, HideSoftInputFlags.None );
-					}
+						try
+						{
+							var view = SurfaceView;
+
+							var inputMethodManager = (InputMethodManager)GetSystemService( Context.InputMethodService );
+
+							if( show )
+							{
+								view.RequestFocus();
+								inputMethodManager.ShowSoftInput( view, ShowFlags.Forced );
+							}
+							else
+							{
+								inputMethodManager.HideSoftInputFromWindow( view.WindowToken, HideSoftInputFlags.None );
+							}
+						}
+						catch { }
+					} );
 				}
 			}
 			catch { }
@@ -324,6 +334,24 @@ namespace NeoAxis.Player.Android
 
 		public override bool OnKeyMultiple( [GeneratedEnum] Keycode keyCode, int repeatCount, global::Android.Views.KeyEvent e )
 		{
+			if( Engine.engineInitialized && keyCode == Keycode.Unknown && !string.IsNullOrEmpty( e.Characters ) )
+			{
+				lock( Engine.inputEventQueue )
+				{
+					foreach( var c in e.Characters )
+					{
+						if( Engine.inputEventQueue.Count < 200 )
+						{
+							var item = new Engine.KeyDownEventItem();
+							item.Character = c;
+							Engine.inputEventQueue.Enqueue( item );
+						}
+					}
+				}
+
+				return true;
+			}
+
 			return base.OnKeyMultiple( keyCode, repeatCount, e );
 		}
 
